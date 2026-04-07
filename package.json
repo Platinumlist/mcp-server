@@ -1,0 +1,38 @@
+{
+  "name": "@platinumlist/mcp-server",
+  "version": "0.1.0",
+  "description": "MCP server for searching events through the Ticketmaster Discovery API",
+  "type": "module",
+  "main": "build/index.js",
+  "bin": {
+    "mcp-server": "build/index.js"
+  },
+  "files": [
+    "build"
+  ],
+  "scripts": {
+    "build": "tsc && chmod +x build/index.js",
+    "start": "node build/index.js",
+    "dev": "tsx watch src/index.ts",
+    "inspector": "npx @modelcontextprotocol/inspector node build/index.js",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "events",
+    "claude",
+    "ai"
+  ],
+  "author": "Platinumlist",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.9.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  }
+}

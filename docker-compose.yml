@@ -1,0 +1,109 @@
+# =============================================================================
+# docker-compose.yml — MCP Server Events
+#
+# Сервисы:
+#   dev         — разработка с hot reload, без npm на машине
+#   build       — однократная сборка production образа
+#   inspector   — визуальный тест инструментов в браузере
+# =============================================================================
+
+services:
+
+  # ── DEV: разработка с hot reload ─────────────────────────────────────────────
+  # Запуск:  docker compose up dev
+  #
+  # Что происходит:
+  # - Монтируем src/ с вашего компьютера внутрь контейнера
+  # - tsx watch следит за изменениями и перезапускает сервер автоматически
+  # - node_modules живут ТОЛЬКО в контейнере — на компьютере их нет
+  dev:
+    build:
+      context: .
+      target: deps          # используем стейдж с devDependencies
+    image: mcp-server-events:dev
+    container_name: mcp-events-dev
+
+    # Читаем API_BASE_URL и API_TOKEN из файла .env
+    env_file:
+      - .env
+
+    # Монтируем src/ — изменения в коде видны в контейнере мгновенно.
+    # node_modules НЕ монтируем — они живут только внутри контейнера.
+    volumes:
+      - ./src:/app/src:ro
+      - ./tsconfig.json:/app/tsconfig.json:ro
+      # Именованный volume для node_modules — изолированы от хоста
+      - node_modules_cache:/app/node_modules
+
+    # tsx watch = горячая перезагрузка при изменении файлов
+    command: ["npx", "tsx", "watch", "src/index.ts"]
+
+    # MCP работает через stdin/stdout — обязательно!
+    stdin_open: true
+    tty: true
+
+    restart: unless-stopped
+
+
+  # ── BUILD: собрать production образ ──────────────────────────────────────────
+  # Запуск:  docker compose run --rm build
+  #
+  # Компилирует TypeScript и создаёт production образ.
+  # Используйте перед публикацией на npm или деплоем.
+  build:
+    build:
+      context: .
+      target: production
+    image: mcp-server-events:latest
+    container_name: mcp-events-build
+
+    env_file:
+      - .env
+
+    stdin_open: true
+    tty: true
+
+
+  # ── INSPECTOR: тестирование инструментов в браузере ───────────────────────────
+  # Запуск:  docker compose up inspector
+  # Затем:   открыть http://localhost:5173 в браузере
+  #
+  # Позволяет вручную вызвать search_events и get_event
+  # и посмотреть что возвращает сервер — без Claude Desktop.
+  inspector:
+    build:
+      context: .
+      target: deps
+    image: mcp-server-events:dev
+    container_name: mcp-events-inspector
+
+    env_file:
+      - .env
+
+    # Говорим inspector слушать на 0.0.0.0 чтобы порты были доступны с Windows хоста
+    environment:
+      - CLIENT_PORT=6274
+      - SERVER_PORT=6277
+      - HOST=0.0.0.0
+
+    volumes:
+      - ./src:/app/src:ro
+      - ./tsconfig.json:/app/tsconfig.json:ro
+      - node_modules_cache:/app/node_modules
+
+    command: >
+      sh -c "npx --yes @modelcontextprotocol/inspector npx tsx src/index.ts"
+
+    ports:
+      - "6274:6274"
+      - "6277:6277"
+
+    stdin_open: true
+    tty: true
+
+
+# Именованный volume для node_modules.
+# Это ключевая идея: зависимости хранятся в Docker volume,
+# а не в папке проекта на вашем компьютере.
+volumes:
+  node_modules_cache:
