@@ -1,96 +1,127 @@
-# MCP Server — Events API
+# MCP Server for Platinumlist
 
-MCP сервер для поиска ивентов через ваш API. Работает с Claude Desktop и Claude Code.
+[![smithery badge](https://smithery.ai/badge/@platinumlist/mcp-server)](https://smithery.ai/server/@platinumlist/mcp-server)
+[![npm version](https://img.shields.io/npm/v/@platinumlist/mcp-server)](https://www.npmjs.com/package/@platinumlist/mcp-server)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Требования
+A Model Context Protocol (MCP) server that provides tools for discovering events, artists and venues through the [Platinumlist](https://api.platinumlist.net) API.
 
-- Docker и Docker Compose
-- Больше ничего! Node.js и npm не нужны.
+## Features
 
-## Быстрый старт для разработчиков
+- 🎫 **Search events** — by name, city, date range, status, event type
+- 📅 **Filter by date** — human-friendly `YYYY-MM-DD` format
+- 🏷️ **Filter by status** — `on sale`, `pre-sale`, `sold out` and more
+- ⭐ **Sort by popularity** — get the most popular events first
+- 📄 **Pagination** — navigate through large result sets
+- 🎟️ **Event details** — full info including description, images, ticket URLs
 
-```bash
-# 1. Клонируйте репо
-git clone https://bitbucket.org/your-team/mcp-server-events.git
-cd mcp-server-events
+## Installation
 
-# 2. Создайте .env с вашими данными
-cp .env.example .env
-# Заполните API_BASE_URL и API_TOKEN в .env
+### Via Smithery (recommended)
 
-# 3. Установите зависимости (один раз)
-make install
-
-# 4. Запустите dev сервер с hot reload
-make dev
-```
-
-Сервер запущен. При изменении файлов в `src/` — перезапускается автоматически.
-
-## Команды
-
-| Команда | Описание |
-|---|---|
-| `make install` | Установить зависимости (первый запуск / после изменения package.json) |
-| `make dev` | Запустить dev сервер с hot reload |
-| `make inspector` | Открыть тест инструментов → http://localhost:5173 |
-| `make build` | Собрать production образ |
-| `make logs` | Логи dev контейнера |
-| `make stop` | Остановить контейнеры |
-| `make clean` | Полный сброс (удалить образы и volume) |
-
-## Тестирование инструментов
+Install automatically for Claude Desktop using [Smithery](https://smithery.ai/server/@platinumlist/mcp-server):
 
 ```bash
-make inspector
-# Откройте http://localhost:5173
-# Вызовите search_events или get_event вручную
+npx -y @smithery/cli install @platinumlist/mcp-server --client claude
 ```
 
-## Подключение к Claude Desktop
+### Manual Installation
+
+Add to your `claude_desktop_config.json`:
+
+**macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`  
+**Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
 
 ```json
 {
   "mcpServers": {
-    "events": {
-      "command": "docker",
-      "args": [
-        "run", "--rm", "-i",
-        "--env-file", "/absolute/path/to/.env",
-        "mcp-server-events:latest"
-      ]
+    "platinumlist": {
+      "command": "npx",
+      "args": ["-y", "@platinumlist/mcp-server"],
+      "env": {
+        "API_TOKEN": "your-platinumlist-api-token"
+      }
     }
   }
 }
 ```
 
-## Инструменты
+Restart Claude Desktop — the 🔌 MCP icon will appear in the interface.
+
+## Configuration
+
+| Variable | Required | Description |
+|---|---|---|
+| `API_TOKEN` | ✅ | Your Platinumlist API Bearer token |
+| `API_BASE_URL` | ❌ | API base URL (default: `https://api.platinumlist.net/v/7`) |
+
+To get your API token, contact [Platinumlist](https://platinumlist.net).
+
+## Available Tools
 
 ### `search_events`
-Поиск ивентов. Параметры: `query`, `city`, `country`, `date_from`, `date_to`, `page`, `limit`.
+
+Search for events with flexible filtering.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `search` | string | Search by event name |
+| `has_tickets` | boolean | Only events with available tickets |
+| `start_from` | string | Events starting from date `YYYY-MM-DD` |
+| `start_to` | string | Events starting before date `YYYY-MM-DD` |
+| `end_from` | string | Events ending after date `YYYY-MM-DD` |
+| `end_to` | string | Events ending before date `YYYY-MM-DD` |
+| `city_id` | number | Filter by city ID |
+| `event_type_id` | number | Filter by event type ID |
+| `event_type_recursive` | boolean | Include sub-types |
+| `is_attraction` | boolean | Only attractions |
+| `is_online` | boolean | Only online events |
+| `status` | enum | `on sale` · `pre-sale` · `pre-register` · `approved` · `sold out` |
+| `sort` | enum | `start` · `end` · `rating` · `-rating` (popular first) |
+| `page` | number | Page number |
+
+**Example prompts:**
+
+> "Find concerts in Dubai this weekend"
+
+> "Show me the most popular events on sale right now"
+
+> "Search for Swan Lake events starting after June 1st"
+
+---
 
 ### `get_event`
-Получить детали ивента по ID. Параметр: `id`.
 
-## Структура проекта
+Get full details of a specific event by ID.
+
+| Parameter | Type | Description |
+|---|---|---|
+| `id` | number | Event ID from `search_events` results |
+
+**Example prompts:**
+
+> "Get full details for event ID 11634"
+
+> "Tell me more about that event"
+
+## Example Usage
+
+Once connected, you can ask Claude naturally:
 
 ```
-src/
-├── index.ts          # Точка входа, запуск MCP сервера
-├── api-client.ts     # HTTP клиент для PHP API (авторизация, fetch)
-└── tools/
-    └── events.ts     # Инструменты search_events и get_event
+Find me events in Dubai next month that still have tickets available,
+sorted by popularity. Show the top 5.
 ```
 
-## Добавить новые инструменты (artists, venues)
+```
+Search for Swan Lake performances and give me full details
+about the first result.
+```
 
-1. Создайте `src/tools/artists.ts` по аналогии с `events.ts`
-2. Подключите в `src/index.ts`:
-   ```typescript
-   import { registerArtistTools } from "./tools/artists.js";
-   registerArtistTools(server);
-   ```
+```
+Are there any pre-sale events happening between July 1 and July 31?
+```
 
 ## License
 
-MIT
+MIT © [Platinumlist](https://github.com/Platinumlist/)

@@ -1,7 +1,7 @@
 {
   "name": "@platinumlist/mcp-server",
   "version": "0.1.0",
-  "description": "MCP server for searching events through the Ticketmaster Discovery API",
+  "description": "MCP server for searching events through the Platinumlist Discovery API",
   "type": "module",
   "main": "build/index.js",
   "bin": {
