@@ -1,16 +1,16 @@
 # =============================================================================
 # MCP Server Events — Dockerfile
 #
-# Три стейджа:
-#   deps        — устанавливает зависимости (кэшируется отдельно)
-#   builder     — компилирует TypeScript
-#   production  — минимальный образ для запуска
+# Three stages:
+#   deps        — installs dependencies (cached separately)
+#   builder     — compiles TypeScript
+#   production  — minimal runtime image
 # =============================================================================
 
-# ─── Стейдж 1: DEPS ───────────────────────────────────────────────────────────
-# Устанавливаем ВСЕ зависимости (включая dev).
-# Отдельный стейдж нужен чтобы Docker кэшировал node_modules —
-# если код изменился, но package.json нет, npm install не запускается заново.
+# ─── Stage 1: DEPS ───────────────────────────────────────────────────────────
+# Installs ALL dependencies (including dev).
+# Separate stage allows Docker to cache node_modules —
+# if code changes but package.json does not, npm install is not re-run.
 FROM node:20-alpine AS deps
 
 WORKDIR /app
@@ -19,47 +19,47 @@ COPY package*.json ./
 RUN npm ci
 
 
-# ─── Стейдж 2: BUILDER ────────────────────────────────────────────────────────
-# Компилируем TypeScript → JavaScript.
+# ─── Stage 2: BUILDER ────────────────────────────────────────────────────────
+# Compiles TypeScript → JavaScript.
 FROM node:20-alpine AS builder
 
 WORKDIR /app
 
-# Берём уже установленные зависимости из стейджа deps
+# Reuse already installed dependencies from deps stage
 COPY --from=deps /app/node_modules ./node_modules
 
-# Копируем исходники
+# Copy source code
 COPY tsconfig.json ./
 COPY src/          ./src/
 
-# Компиляция
+# Build step
 RUN npm run build
 
 
-# ─── Стейдж 3: PRODUCTION ─────────────────────────────────────────────────────
-# Минимальный образ — только скомпилированный код и runtime зависимости.
-# Без TypeScript, tsx, @types и прочего dev-мусора.
+# ─── Stage 3: PRODUCTION ─────────────────────────────────────────────────────
+# Minimal image — only compiled code and runtime dependencies.
+# No TypeScript, tsx, @types, or other dev dependencies.
 FROM node:20-alpine AS production
 
 WORKDIR /app
 
-# Метаданные образа (стандарт OCI)
+# Image metadata (OCI standard)
 LABEL org.opencontainers.image.title="MCP Server Events"
 LABEL org.opencontainers.image.description="MCP server for searching events via API"
-LABEL org.opencontainers.image.source="https://github.com/YOUR_USERNAME/mcp-server-events"
+LABEL org.opencontainers.image.source="https://github.com/Platinumlist/mcp-server"
 
-# Устанавливаем ТОЛЬКО production зависимости
+# Install ONLY production dependencies
 COPY package*.json ./
 RUN npm ci --omit=dev --ignore-scripts
 
-# Копируем скомпилированный код из builder
+# Copy compiled code from builder stage
 COPY --from=builder /app/build ./build
 
-# Запускаем от непривилегированного пользователя (best practice безопасности)
+# Run as non-privileged user (security best practice)
 USER node
 
 ENV NODE_ENV=production
 
-# MCP работает через stdio — никаких портов не нужно.
-# Переменные API_URL и API_TOKEN передаются при запуске через --env-file или -e.
+# MCP works via stdio — no ports needed.
+# API_URL and API_TOKEN are passed via --env-file or -e at runtime.
 CMD ["node", "build/index.js"]

@@ -1,55 +1,55 @@
 # =============================================================================
 # docker-compose.yml — MCP Server Events
 #
-# Сервисы:
-#   dev         — разработка с hot reload, без npm на машине
-#   build       — однократная сборка production образа
-#   inspector   — визуальный тест инструментов в браузере
+# Services:
+#   dev         — development with hot reload, no local npm required
+#   build       — one-time production image build
+#   inspector   — visual tool testing in browser
 # =============================================================================
 
 services:
 
-  # ── DEV: разработка с hot reload ─────────────────────────────────────────────
-  # Запуск:  docker compose up dev
+  # ── DEV: development with hot reload ───────────────────────────────────────
+  # Run:  docker compose up dev
   #
-  # Что происходит:
-  # - Монтируем src/ с вашего компьютера внутрь контейнера
-  # - tsx watch следит за изменениями и перезапускает сервер автоматически
-  # - node_modules живут ТОЛЬКО в контейнере — на компьютере их нет
+  # What happens:
+  # - Mounts src/ from your machine into the container
+  # - tsx watch automatically restarts server on changes
+  # - node_modules live ONLY inside the container — not on host machine
   dev:
     build:
       context: .
-      target: deps          # используем стейдж с devDependencies
+      target: deps          # use stage with devDependencies
     image: mcp-server-events:dev
     container_name: mcp-events-dev
 
-    # Читаем API_BASE_URL и API_TOKEN из файла .env
+    # Read API_BASE_URL and API_TOKEN from .env file
     env_file:
       - .env
 
-    # Монтируем src/ — изменения в коде видны в контейнере мгновенно.
-    # node_modules НЕ монтируем — они живут только внутри контейнера.
+    # Mount src/ — code changes are immediately visible in container.
+    # node_modules are NOT mounted — they exist only inside container.
     volumes:
       - ./src:/app/src:ro
       - ./tsconfig.json:/app/tsconfig.json:ro
-      # Именованный volume для node_modules — изолированы от хоста
+      # Named volume for node_modules — isolated from host
       - node_modules_cache:/app/node_modules
 
-    # tsx watch = горячая перезагрузка при изменении файлов
-    command: ["npx", "tsx", "watch", "src/index.ts"]
+    # tsx watch = hot reload on file changes
+    command: [ "npx", "tsx", "watch", "src/index.ts" ]
 
-    # MCP работает через stdin/stdout — обязательно!
+    # MCP runs via stdin/stdout — required!
     stdin_open: true
     tty: true
 
     restart: unless-stopped
 
 
-  # ── BUILD: собрать production образ ──────────────────────────────────────────
-  # Запуск:  docker compose run --rm build
+  # ── BUILD: build production image ──────────────────────────────────────────
+  # Run:  docker compose run --rm build
   #
-  # Компилирует TypeScript и создаёт production образ.
-  # Используйте перед публикацией на npm или деплоем.
+  # Compiles TypeScript and creates production image.
+  # Use before publishing or deployment.
   build:
     build:
       context: .
@@ -64,12 +64,12 @@ services:
     tty: true
 
 
-  # ── INSPECTOR: тестирование инструментов в браузере ───────────────────────────
-  # Запуск:  docker compose up inspector
-  # Затем:   открыть http://localhost:5173 в браузере
+  # ── INSPECTOR: test tools in browser ───────────────────────────────────────
+  # Run:  docker compose up inspector
+  # Then: open http://localhost:5173 in browser
   #
-  # Позволяет вручную вызвать search_events и get_event
-  # и посмотреть что возвращает сервер — без Claude Desktop.
+  # Lets you manually call search_events and get_event
+  # and inspect server responses without Claude Desktop.
   inspector:
     build:
       context: .
@@ -80,7 +80,7 @@ services:
     env_file:
       - .env
 
-    # Говорим inspector слушать на 0.0.0.0 чтобы порты были доступны с Windows хоста
+    # Make inspector listen on 0.0.0.0 so ports are accessible from Windows host
     environment:
       - CLIENT_PORT=6274
       - SERVER_PORT=6277
@@ -102,8 +102,8 @@ services:
     tty: true
 
 
-# Именованный volume для node_modules.
-# Это ключевая идея: зависимости хранятся в Docker volume,
-# а не в папке проекта на вашем компьютере.
+# Named volume for node_modules.
+# Key idea: dependencies are stored in Docker volume,
+# not in your local project folder.
 volumes:
   node_modules_cache:
