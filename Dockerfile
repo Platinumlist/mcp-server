@@ -29,6 +29,7 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 
 # Copy source code
+COPY package*.json ./
 COPY tsconfig.json ./
 COPY src/          ./src/
 
