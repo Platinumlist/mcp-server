@@ -15,16 +15,6 @@ A Model Context Protocol (MCP) server that provides tools for discovering events
 - 📄 **Pagination** — navigate through large result sets
 - 🎟️ **Event details** — full info including description, images, ticket URLs
 
-## Installation
-
-### Via Smithery (recommended)
-
-Install automatically for Claude Desktop using [Smithery](https://smithery.ai/server/@platinumlist/mcp-server):
-
-```bash
-npx -y @smithery/cli install @platinumlist/mcp-server --client claude
-```
-
 ### Manual Installation
 
 Add to your `claude_desktop_config.json`:
