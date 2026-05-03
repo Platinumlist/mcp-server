@@ -6,6 +6,8 @@
  */
 
 import {type ApiEvent, type ApiPagination} from "../types/events.js";
+import {type ApiArtist} from "../types/artists.js";
+import {type ApiVenue} from "../types/venues.js";
 import {timestampToDate} from "./date.js";
 
 /**
@@ -67,14 +69,8 @@ export function formatEventFull(event: ApiEvent): string {
     return lines.join("\n");
 }
 
-/**
- * Pagination block formatting.
- * Used in any tool that returns paginated lists.
- *
- * @example
- * formatPagination(pagination) →
- * "Found 490 total (page 1 of 49, showing 10 per page)"
- */
+// ─── Pagination ───────────────────────────────────────────────────────────────
+
 export function formatPagination(p: ApiPagination): string {
     return (
         `Found ${p.total} total ` +
@@ -83,12 +79,64 @@ export function formatPagination(p: ApiPagination): string {
     );
 }
 
-/**
- * Next page hint.
- * Added to the end of the list if there are more results.
- */
 export function formatNextPageHint(p: ApiPagination): string {
     return p.links.next
         ? `\n\nNext page available — use page: ${p.current_page + 1}`
         : "";
+}
+
+// ─── Artists ──────────────────────────────────────────────────────────────────
+
+export function formatArtistShort(artist: ApiArtist, index?: number): string {
+    const prefix = index !== undefined ? `${index + 1}. ` : "";
+    const lines: string[] = [];
+
+    lines.push(`${prefix}[ID: ${artist.id}] ${artist.name}`);
+    if (artist.url) lines.push(`   Link: ${artist.url}`);
+
+    return lines.join("\n");
+}
+
+export function formatArtistFull(artist: ApiArtist): string {
+    const lines: string[] = [];
+
+    lines.push(`[ID: ${artist.id}] ${artist.name}`);
+    if (artist.url) lines.push(`Link: ${artist.url}`);
+
+    return lines.join("\n");
+}
+
+// ─── Venues ───────────────────────────────────────────────────────────────────
+
+export function formatVenueShort(venue: ApiVenue, index?: number): string {
+    const prefix = index !== undefined ? `${index + 1}. ` : "";
+    const lines: string[] = [];
+
+    lines.push(`${prefix}[ID: ${venue.id}] ${venue.name}`);
+    if (venue.location) lines.push(`   Address: ${venue.location}`);
+    if (venue.latitude && venue.longitude) {
+        lines.push(`   Coordinates: ${venue.latitude}, ${venue.longitude}`);
+    }
+
+    return lines.join("\n");
+}
+
+export function formatVenueFull(venue: ApiVenue): string {
+    const lines: string[] = [];
+
+    lines.push(`[ID: ${venue.id}] ${venue.name}`);
+    if (venue.info) lines.push(`Info: ${venue.info}`);
+    if (venue.location) lines.push(`Address: ${venue.location}`);
+    if (venue.phone) lines.push(`Phone: ${venue.phone}`);
+    if (venue.website) lines.push(`Website: ${venue.website}`);
+
+    if (venue.latitude && venue.longitude) {
+        lines.push(`Coordinates: ${venue.latitude}, ${venue.longitude}`);
+        lines.push(`Map: https://www.google.com/maps?q=${venue.latitude},${venue.longitude}`);
+    }
+
+    const img = venue.image_big;
+    if (img && !Array.isArray(img)) lines.push(`Image: ${img.src}`);
+
+    return lines.join("\n");
 }
